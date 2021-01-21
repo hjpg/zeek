@@ -342,11 +342,6 @@ void Connection::StatusUpdateTimer(double t)
 	          detail::TIMER_CONN_STATUS_UPDATE);
 	}
 
-RecordVal* Connection::BuildConnVal()
-	{
-	return ConnVal()->Ref()->AsRecordVal();
-	}
-
 const RecordValPtr& Connection::ConnVal()
 	{
 	if ( ! conn_val )
@@ -475,55 +470,6 @@ void Connection::Event(EventHandlerPtr f, analyzer::Analyzer* analyzer, const ch
 		EnqueueEvent(f, analyzer, make_intrusive<StringVal>(name), ConnVal());
 	else
 		EnqueueEvent(f, analyzer, ConnVal());
-	}
-
-void Connection::Event(EventHandlerPtr f, analyzer::Analyzer* analyzer, Val* v1, Val* v2)
-	{
-	if ( ! f )
-		{
-		Unref(v1);
-		Unref(v2);
-		return;
-		}
-
-	if ( v2 )
-		EnqueueEvent(f, analyzer,
-		             ConnVal(),
-		             IntrusivePtr{AdoptRef{}, v1},
-		             IntrusivePtr{AdoptRef{}, v2});
-	else
-		EnqueueEvent(f, analyzer,
-		             ConnVal(),
-		             IntrusivePtr{AdoptRef{}, v1});
-	}
-
-void Connection::ConnectionEvent(EventHandlerPtr f, analyzer::Analyzer* a, ValPList vl)
-	{
-	auto args = val_list_to_args(vl);
-
-	if ( ! f )
-		// This may actually happen if there is no local handler
-		// and a previously existing remote handler went away.
-		return;
-
-	// "this" is passed as a cookie for the event
-	event_mgr.Enqueue(f, std::move(args), util::detail::SOURCE_LOCAL, a ? a->GetID() : 0, this);
-	}
-
-void Connection::ConnectionEventFast(EventHandlerPtr f, analyzer::Analyzer* a, ValPList vl)
-	{
-	// "this" is passed as a cookie for the event
-	event_mgr.Enqueue(f, val_list_to_args(vl), util::detail::SOURCE_LOCAL,
-	                        a ? a->GetID() : 0, this);
-	}
-
-void Connection::ConnectionEvent(EventHandlerPtr f, analyzer::Analyzer* a, ValPList* vl)
-	{
-	auto args = val_list_to_args(*vl);
-	delete vl;
-
-	if ( f )
-		EnqueueEvent(f, a, std::move(args));
 	}
 
 void Connection::EnqueueEvent(EventHandlerPtr f, analyzer::Analyzer* a,
